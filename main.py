@@ -1,5 +1,6 @@
 nodes = {}
 edges = {}
+conditional_edges = {}
 
 def add_node(name, function):
     nodes[name] = function
@@ -21,9 +22,11 @@ def append_reducer(old, new):
     if old is None:
         return new
     return old + new
+def add_conditional_edge(from_node, decision_function):
+    conditional_edges[from_node] = decision_function
 
-def run():
-    state = {}
+def run(initial_state=None):
+    state = initial_state or {}
     current=entry_point
     while current:
         update = nodes[current](state)
@@ -35,6 +38,12 @@ def run():
             else:
                 # no reducer, just overwrite like before
                 state[key] = new_value
-        current = edges.get(current)
+        if current in edges:
+            current = edges[current]
+        elif current in conditional_edges:
+            decision_function = conditional_edges[current]
+            current = decision_function(state)
+        else:
+            current = None
     return state
         
