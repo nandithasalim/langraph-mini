@@ -25,10 +25,16 @@ def append_reducer(old, new):
 def add_conditional_edge(from_node, decision_function):
     conditional_edges[from_node] = decision_function
 
-def run(initial_state=None):
+def stream(initial_state=None,max_iterations=100):
     state = initial_state or {}
     current=entry_point
-    while current:
+    iterations = 0
+    while current :
+        if iterations >= max_iterations:
+            raise RuntimeError(
+            f"Graph exceeded max iterations ({max_iterations}). "
+            f"Possible infinite loop. Last node: '{current}'"
+        )
         update = nodes[current](state)
         for key, new_value in update.items():
             if key in reducers:
@@ -38,6 +44,7 @@ def run(initial_state=None):
             else:
                 # no reducer, just overwrite like before
                 state[key] = new_value
+        yield state
         if current in edges:
             current = edges[current]
         elif current in conditional_edges:
@@ -45,5 +52,13 @@ def run(initial_state=None):
             current = decision_function(state)
         else:
             current = None
-    return state
+        iterations += 1
+    
+def run(initial_state=None, max_iterations=100):
+    # just consume stream and return the last state
+    final = None
+    for state in stream(initial_state, max_iterations):
+        final = state
+    return final
         
+
