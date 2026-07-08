@@ -1,9 +1,18 @@
 nodes = {}
 edges = {}
 conditional_edges = {}
+entry_point = None  # name of first node to execute
 import json,os
 
 class FileCheckpointer:
+    """
+    Stores both the current state AND which node is scheduled to run next,
+    so a graph can resume mid-execution after a crash without re-running
+    nodes that already completed.
+
+    Real LangGraph supports multiple backends (SQLite, Postgres, Redis).
+    This is the simplest one — file-based JSON.
+    """
     def __init__(self, filepath):
         self.filepath = filepath
     
@@ -27,12 +36,18 @@ def add_edge(func1, func2):
         raise ValueError("One or both functions are not added as nodes.")
     edges[func1] = func2
 
-entry_point = None
+
 def set_entry(node_name):
     global entry_point
     entry_point = node_name
+
 reducers={}
 def register_reducer(key, reducer_function):
+    """
+    Without a registered reducer, the default behavior is 'overwrite'
+    (new value replaces old). With a reducer, the framework calls
+    reducer_function(old_value, new_value) and stores the result.
+    """
     reducers[key] = reducer_function
 
 def append_reducer(old, new):
@@ -60,7 +75,8 @@ def stream(initial_state=None,max_iterations=100,checkpointer=None):
             f"Graph exceeded max iterations ({max_iterations}). "
             f"Possible infinite loop. Last node: '{current}'"
         )
-        update = nodes[current](state)
+        update = nodes[current](state) #run current node
+
         for key, new_value in update.items():
             if key in reducers:
                 # use the reducer to merge
@@ -70,6 +86,7 @@ def stream(initial_state=None,max_iterations=100,checkpointer=None):
                 # no reducer, just overwrite like before
                 state[key] = new_value
 
+        #Decide the next node
         if current in edges:
             current = edges[current]
         elif current in conditional_edges:
@@ -77,9 +94,10 @@ def stream(initial_state=None,max_iterations=100,checkpointer=None):
             current = decision_function(state)
         else:
             current = None
+        #Save checkpoint AFTER we know the next node, so resume works
         if checkpointer:
             checkpointer.save(state, current)
-        yield dict(state)
+        yield dict(state) # give live reference
         iterations += 1
     
 def run(initial_state=None, max_iterations=100,checkpointer=None):
