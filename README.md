@@ -40,11 +40,15 @@ print(run({"name": "Nanditha"}))
 
 I rebuilt the 3-node LangGraph pipeline from my project MotivAI (retrieve context → generate reaction → store) on top of minigraph. Same node structure, same state model, identical behavior — see `motivai_rebuild.py`.
 
-## Tests
+## Test
 
-```bash
+Run the built-in test suite (7 tests covering every feature):
+
 python3 test.py
-```
+
+Run the MotivAI production pipeline rebuild on top of minigraph:
+
+python3 motivai_rebuild.py
 
 Seven tests cover every feature end-to-end, including a crash-and-resume test that proves completed nodes don't re-run on resume.
 
