@@ -1,5 +1,5 @@
 import os
-from main import (
+from minigraph import (
     add_node, add_edge, add_conditional_edge, set_entry,
     register_reducer, append_reducer, stream, run,
     FileCheckpointer, nodes, edges, conditional_edges, reducers

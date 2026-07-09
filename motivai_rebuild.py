@@ -1,4 +1,4 @@
-from main import (
+from minigraph import (
     add_node, add_edge, set_entry, run,
     nodes, edges, conditional_edges, reducers
 )
